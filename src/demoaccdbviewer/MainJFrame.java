@@ -5,12 +5,24 @@
  */
 package demoaccdbviewer;
 
+import com.healthmarketscience.jackcess.DatabaseBuilder;
+import com.healthmarketscience.jackcess.Table;
+import java.io.File;
+import java.io.IOException;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JFileChooser;
+import javax.swing.table.DefaultTableModel;
+
 /**
  *
  * @author Graf_Nameless
  */
 public class MainJFrame extends javax.swing.JFrame {
-
+    public static File f1;    
+    JFileChooser fc = new JFileChooser();
+    Table tab;
     /**
      * Creates new form MainJFrame
      */
@@ -32,17 +44,27 @@ public class MainJFrame extends javax.swing.JFrame {
         viewTableJButton = new javax.swing.JButton();
         tablesJComboBox = new javax.swing.JComboBox();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
+        dataJTable = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         getFileJButton.setText("Файл");
+        getFileJButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                getFileJButtonActionPerformed(evt);
+            }
+        });
 
         filePathJTextField.setEditable(false);
 
         viewTableJButton.setText("Просмотреть таблицу");
+        viewTableJButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                viewTableJButtonActionPerformed(evt);
+            }
+        });
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        dataJTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
@@ -50,7 +72,7 @@ public class MainJFrame extends javax.swing.JFrame {
 
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        jScrollPane1.setViewportView(dataJTable);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -89,6 +111,64 @@ public class MainJFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void getFileJButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_getFileJButtonActionPerformed
+        fc.setCurrentDirectory(new File("."));
+        int returnVal = fc.showDialog(getFileJButton, "Attach");
+        if (returnVal == JFileChooser.APPROVE_OPTION)
+        {
+            f1 = fc.getSelectedFile();
+            filePathJTextField.setText(fc.getSelectedFile().getPath());
+            setComboBox();
+        }        
+    }//GEN-LAST:event_getFileJButtonActionPerformed
+
+    private void viewTableJButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewTableJButtonActionPerformed
+        try {
+            tab = DatabaseBuilder.open(f1).getTable((String) tablesJComboBox.getItemAt(tablesJComboBox.getSelectedIndex()));
+            printDataToTable();
+        } catch (IOException ex) {
+            Logger.getLogger(MainJFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_viewTableJButtonActionPerformed
+    
+    private void printDataToTable(){
+        try {
+            dataJTable.setModel(new DefaultTableModel(getDataTable(getColumnsName()), getColumnsName()));
+        } catch (IOException ex) {
+            Logger.getLogger(MainJFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private String[] getColumnsName(){
+        String[] columnNames = new String[tab.getColumns().size()];
+        for(int i = 0; i < tab.getColumns().size(); i++){
+            columnNames[i] = tab.getColumns().get(i).getName();
+        }
+        return columnNames;
+    }
+    
+    private Object[][] getDataTable(String[] nameCol) throws IOException{
+        Object [][] data = new Object[tab.getRowCount()][nameCol.length];
+        for(int i = 0; i < nameCol.length; i++){
+            String[] dataCol = MDBOperations.GetRowValueOnNameColumn(tab, nameCol[i]);
+            for(int j = 0; j < dataCol.length; j++){
+                data[j][i] = dataCol[j];
+            }
+        }
+        return data;
+    }
+    
+    private void setComboBox(){
+        try {
+            Set<String> tableNames = DatabaseBuilder.open(new File(f1.getPath())).getTableNames();
+            tableNames.stream().forEach(tab -> {
+                tablesJComboBox.addItem(tab);
+            });            
+        } catch (IOException ex) {
+            Logger.getLogger(MainJFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     /**
      * @param args the command line arguments
      */
@@ -125,10 +205,10 @@ public class MainJFrame extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTable dataJTable;
     private javax.swing.JTextField filePathJTextField;
     private javax.swing.JButton getFileJButton;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTable1;
     private javax.swing.JComboBox tablesJComboBox;
     private javax.swing.JButton viewTableJButton;
     // End of variables declaration//GEN-END:variables
